@@ -10,6 +10,8 @@ export interface Document {
   status: "draft" | "pending" | "approved" | "rejected"
   createdAt: string
   updatedAt: string
+  owner?: string
+  tags?: string[]
 }
 
 export interface Folder {
@@ -18,6 +20,7 @@ export interface Folder {
   parentId: string | null
   ownerId: string
   createdAt: string
+  children?: Folder[]
 }
 
 export interface UploadProgress {
