@@ -4,6 +4,9 @@ export interface User {
   name: string
   role: "admin" | "manager" | "user" | "reviewer" | "auditor"
   createdAt: string
+  status: "active" | "inactive" | "locked"
+  lastLogin: string | null
+  documentsCount: number
 }
 
 export interface AuthResponse {

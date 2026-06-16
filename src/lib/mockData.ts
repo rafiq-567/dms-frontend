@@ -1,4 +1,4 @@
-import { Document, Folder } from "@/types"
+import { Document, Folder, User } from "@/types"
 
 export const mockFolders: Folder[] = [
   { id: "f1", name: "HR Documents", parentId: null, ownerId: "1", createdAt: "2026-01-01" },
@@ -7,6 +7,61 @@ export const mockFolders: Folder[] = [
   { id: "f4", name: "Recruitment", parentId: "f1", ownerId: "1", createdAt: "2026-01-01" },
   { id: "f5", name: "Payroll", parentId: "f1", ownerId: "1", createdAt: "2026-01-01" },
   { id: "f6", name: "Invoices", parentId: "f2", ownerId: "1", createdAt: "2026-01-01" },
+]
+export const mockUsers: User[] = [
+  {
+    id: "u1",
+    name: "Admin User",
+    email: "admin@dms.com",
+    role: "admin",
+    status: "active",
+    lastLogin: "2026-06-15T09:00:00Z",
+    createdAt: "2025-01-01",
+    documentsCount: 42,
+  },
+  {
+    id: "u2",
+    name: "Abdullah Mamun",
+    email: "abdullah@mamun.com",
+    role: "auditor",
+    status: "inactive",
+    lastLogin: "2026-06-15T09:00:00Z",
+    createdAt: "2025-01-01",
+    documentsCount: 42,
+  },
+  {
+    id: "u3",
+    name: "Jafar Ahmed",
+    email: "jafar@ahmed.com",
+    role: "reviewer",
+    status: "inactive",
+    lastLogin: "2026-06-15T09:00:00Z",
+    createdAt: "2025-01-01",
+    documentsCount: 42,
+  },
+  {
+    id: "u4",
+    name: "Hasanur Rahman",
+    email: "hasanur@rahman.com",
+    role: "user",
+    status: "locked",
+    lastLogin: "2026-06-15T09:00:00Z",
+    createdAt: "2025-01-01",
+    documentsCount: 42,
+  },
+  {
+    id: "u5",
+    name: "Legal Team",
+    email: "legal@company.com",
+    role: "manager",
+    status: "active",
+    lastLogin: "2026-06-15T09:00:00Z",
+    createdAt: "2025-01-01",
+    documentsCount: 42,
+  },
+  // আরো ৪-৫ জন নিজে বানাও
+  // role গুলো vary করো: manager, user, reviewer, auditor
+  // status vary করো: active, inactive, locked
 ]
 
 export const mockDocuments: Document[] = [
