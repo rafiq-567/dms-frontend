@@ -4,10 +4,24 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { mockUsers } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store"
 import { User } from "@/types"
-import { Filter, Key, Mail, MoreVertical, Search, Shield, UserCheck, UserPlus, UserX } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Filter, Key, Mail, MoreVertical, Search, Shield, UserCheck, UserPlus, UserX, X } from "lucide-react"
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import z from "zod"
 
+
+const addUserSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email"),
+  employeeId: z.string().optional(),
+  role: z.enum(["admin", "manager", "user", "reviewer", "auditor"]),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+})
+
+type AddUserForm = z.infer<typeof addUserSchema>
 
 export default function UsersPage() {
   const [search, setSearch] = useState("")
@@ -16,6 +30,12 @@ export default function UsersPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>(mockUsers)
+  const [showAddUser, setShowAddUser] = useState(false)
+  const { user } = useAuthStore()
+
+  const { register: registerUser, handleSubmit: handleAddUser, formState: { errors: addErrors }, reset } = useForm<AddUserForm>({
+    resolver: zodResolver(addUserSchema),
+  })
 
   const filtered = users.filter((u) => {
     const matchesSearch =
@@ -25,6 +45,23 @@ export default function UsersPage() {
     const matchesStatus = statusFilter === "all" || u.status === statusFilter
     return matchesSearch && matchesRole && matchesStatus
   })
+
+  const onAddUser = (data: AddUserForm) => {
+    const newUser: User = {
+      id: `u${users.length + 1}`,
+      name: data.name,
+      email: data.email,
+      employeeId: data.employeeId,
+      role: data.role,
+      status: "active",
+      lastLogin: null,
+      createdAt: new Date().toISOString(),
+      documentsCount: 0,
+    }
+    setUsers((prev) => [...prev, newUser])
+    setShowAddUser(false)
+    reset()
+  }
 
   const roleConfig = {
     admin: { label: "Admin", color: "text-red-700", bg: "bg-red-100" },
@@ -79,10 +116,13 @@ export default function UsersPage() {
             {users.length} total users · {users.filter((u) => u.status === "active").length} active
           </p>
         </div>
-        <Button size="sm" className="gap-1.5">
-          <UserPlus size={15} />
-          Add User
-        </Button>
+        {/* শুধু admin দেখতে পাবে */}
+        {user?.role === "admin" && (
+          <Button size="sm" className="gap-1.5" onClick={() => setShowAddUser(true)}>
+            <UserPlus size={15} />
+            Add User
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -310,6 +350,76 @@ export default function UsersPage() {
           })}
         </div>
       </Card>
+
+      {showAddUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">Add New User</h3>
+              <button onClick={() => setShowAddUser(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUser(onAddUser)} className="space-y-3">
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Full Name</label>
+                <input {...registerUser("name")} placeholder="John Doe"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                {addErrors.name && <p className="text-red-500 text-xs">{addErrors.name.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Email</label>
+                <input {...registerUser("email")} placeholder="john@company.com" type="email"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                {addErrors.email && <p className="text-red-500 text-xs">{addErrors.email.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Employee ID (optional)</label>
+                <input {...registerUser("employeeId")} placeholder="EMP-001"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Role</label>
+                <select {...registerUser("role")}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option value="user">User</option>
+                  <option value="manager">Manager</option>
+                  <option value="reviewer">Reviewer</option>
+                  <option value="auditor">Auditor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Password</label>
+                <input {...registerUser("password")} placeholder="••••••••" type="password"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                {addErrors.password && <p className="text-red-500 text-xs">{addErrors.password.message}</p>}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setShowAddUser(false)}
+                  className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit"
+                  className="flex-1 bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700">
+                  Create User
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
+
   )
 }

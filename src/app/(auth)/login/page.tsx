@@ -20,10 +20,11 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>
 
-const MOCK_USER = {
-  email: "admin@dms.com",
-  password: "123456",
-}
+const MOCK_USERS = [
+  { email: "admin@dms.com", password: "123456", role: "admin" as const, name: "Admin User" },
+  { email: "manager@dms.com", password: "123456", role: "manager" as const, name: "Sarah Johnson" },
+  { email: "user@dms.com", password: "123456", role: "user" as const, name: "Mike Davis" },
+]
 
 export default function LoginPage() {
   const router = useRouter()
@@ -41,28 +42,35 @@ export default function LoginPage() {
   })
 
   const onSubmit = (data: LoginForm) => {
-    setIsLoading(true)
-    setError(null)
+  setIsLoading(true)
+  setError(null)
 
-    setTimeout(() => {
-      if (data.email === MOCK_USER.email && data.password === MOCK_USER.password) {
-        setAuth(
-          {
-            id: "1",
-            name: "Admin User",
-            email: data.email,
-            role: "admin",
-            createdAt: new Date().toISOString(),
-          },
-          "mock-token"
-        )
-        router.push("/dashboard")
-      } else {
-        setError("Invalid email or password.")
-      }
-      setIsLoading(false)
-    }, 800)
-  }
+  setTimeout(() => {
+    const found = MOCK_USERS.find(
+      (u) => u.email === data.email && u.password === data.password
+    )
+
+    if (found) {
+      setAuth(
+        {
+          id: "1",
+          name: found.name,
+          email: found.email,
+          role: found.role,
+          createdAt: new Date().toISOString(),
+          status: "active",
+          lastLogin: new Date().toISOString(),
+          documentsCount: 0,
+        },
+        "mock-token"
+      )
+      router.push("/dashboard")
+    } else {
+      setError("Invalid email or password.")
+    }
+    setIsLoading(false)
+  }, 800)
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

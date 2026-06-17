@@ -3,6 +3,7 @@ export interface User {
   email: string
   name: string
   role: "admin" | "manager" | "user" | "reviewer" | "auditor"
+  employeeId?: string
   createdAt: string
   status: "active" | "inactive" | "locked"
   lastLogin: string | null
