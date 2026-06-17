@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { mockUsers } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 import { User } from "@/types"
-import { Filter, Mail, MoreVertical, Search, Shield, UserCheck, UserPlus, UserX } from "lucide-react"
+import { Filter, Key, Mail, MoreVertical, Search, Shield, UserCheck, UserPlus, UserX } from "lucide-react"
 import { useState } from "react"
 
 
@@ -27,43 +27,43 @@ export default function UsersPage() {
   })
 
   const roleConfig = {
-  admin: { label: "Admin", color: "text-red-700", bg: "bg-red-100" },
-  manager: { label: "Manager", color: "text-purple-700", bg: "bg-purple-100" },
-  user: { label: "User", color: "text-blue-700", bg: "bg-blue-100" },
-  reviewer: { label: "Reviewer", color: "text-orange-700", bg: "bg-orange-100" },
-  auditor: { label: "Auditor", color: "text-teal-700", bg: "bg-teal-100" },
-}
+    admin: { label: "Admin", color: "text-red-700", bg: "bg-red-100" },
+    manager: { label: "Manager", color: "text-purple-700", bg: "bg-purple-100" },
+    user: { label: "User", color: "text-blue-700", bg: "bg-blue-100" },
+    reviewer: { label: "Reviewer", color: "text-orange-700", bg: "bg-orange-100" },
+    auditor: { label: "Auditor", color: "text-teal-700", bg: "bg-teal-100" },
+  }
 
-const statusConfig = {
-  active: { label: "Active", color: "text-green-700", bg: "bg-green-100", dot: "bg-green-500" },
-  inactive: { label: "Inactive", color: "text-gray-600", bg: "bg-gray-100", dot: "bg-gray-400" },
-  locked: { label: "Locked", color: "text-red-700", bg: "bg-red-100", dot: "bg-red-500" },
-}
+  const statusConfig = {
+    active: { label: "Active", color: "text-green-700", bg: "bg-green-100", dot: "bg-green-500" },
+    inactive: { label: "Inactive", color: "text-gray-600", bg: "bg-gray-100", dot: "bg-gray-400" },
+    locked: { label: "Locked", color: "text-red-700", bg: "bg-red-100", dot: "bg-red-500" },
+  }
 
-const getInitials = (name: string) => {
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-}
+  const getInitials = (name: string) => {
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  }
 
-const formatDate = (iso: string | null | undefined) => {
-  if (!iso) return "Never"
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short", day: "numeric", year: "numeric",
-  })
-}
+  const formatDate = (iso: string | null | undefined) => {
+    if (!iso) return "Never"
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: "short", day: "numeric", year: "numeric",
+    })
+  }
 
-const handleStatusChange = (id: string, status: "active" | "inactive" | "locked") => {
-  setUsers((prev) =>
-    prev.map((u) => (u.id === id ? { ...u, status } : u))
-  )
-  setActiveMenu(null)
-}
+  const handleStatusChange = (id: string, status: "active" | "inactive" | "locked") => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status } : u))
+    )
+    setActiveMenu(null)
+  }
 
-const handleRoleChange = (id: string, role: User["role"]) => {
-  setUsers((prev) =>
-    prev.map((u) => (u.id === id ? { ...u, role } : u))
-  )
-  setActiveMenu(null)
-}
+  const handleRoleChange = (id: string, role: User["role"]) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, role } : u))
+    )
+    setActiveMenu(null)
+  }
 
   const roles = ["all", "admin", "manager", "user", "reviewer", "auditor"]
   const statuses = ["all", "active", "inactive", "locked"]
@@ -199,7 +199,7 @@ const handleRoleChange = (id: string, role: User["role"]) => {
         <div className="divide-y divide-gray-50">
           {filtered.map((user) => {
             const role = roleConfig[user.role]
-            const status = statusConfig[user.status]
+            const status = statusConfig[user.status ?? "inactive"]
 
             return (
               <div
