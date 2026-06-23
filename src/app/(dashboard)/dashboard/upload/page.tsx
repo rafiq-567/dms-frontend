@@ -77,7 +77,6 @@ export default function UploadPage() {
     setFiles((prev) => prev.filter((f) => f.id !== id))
   }
 
-  // Mock upload — encryption logic পরে এখানে add হবে
   const handleUpload = async () => {
     const waitingFiles = files.filter((f) => f.status === "waiting")
     if (waitingFiles.length === 0) return
@@ -85,7 +84,6 @@ export default function UploadPage() {
     setIsUploading(true)
 
     for (const fileItem of waitingFiles) {
-      // Step 1: Encrypting (mock)
       setFiles((prev) =>
         prev.map((f) =>
           f.id === fileItem.id ? { ...f, status: "encrypting", progress: 0 } : f
@@ -93,7 +91,6 @@ export default function UploadPage() {
       )
       await new Promise((r) => setTimeout(r, 800))
 
-      // Step 2: Uploading with progress (mock)
       setFiles((prev) =>
         prev.map((f) =>
           f.id === fileItem.id ? { ...f, status: "uploading", progress: 0 } : f
@@ -109,7 +106,6 @@ export default function UploadPage() {
         )
       }
 
-      // Step 3: Done
       setFiles((prev) =>
         prev.map((f) =>
           f.id === fileItem.id ? { ...f, status: "done", progress: 100 } : f
@@ -139,124 +135,127 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-3xl">
+    // ↓ The only change: this wrapper centers everything vertically and horizontally
+    <div className="min-h-screen flex justify-center p-6">
+      <div className="w-full max-w-7xl space-y-4">
 
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Upload Documents</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Files are encrypted in your browser before upload.
-        </p>
-      </div>
-
-      {/* Drop zone */}
-      <Card
-        className={cn(
-          "border-2 border-dashed transition-colors cursor-pointer",
-          isDragging ? "border-slate-900 bg-slate-50" : "border-gray-200 hover:border-gray-300"
-        )}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onClick={() => document.getElementById("file-input")?.click()}
-      >
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <div className={cn(
-            "rounded-full p-4 mb-4 transition-colors",
-            isDragging ? "bg-slate-200" : "bg-gray-100"
-          )}>
-            <Upload size={28} className="text-gray-500" />
-          </div>
-          <p className="text-sm font-medium text-gray-700">
-            Drag and drop files here, or click to browse
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800">Upload Documents</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Files are encrypted in your browser before upload.
           </p>
-          <p className="text-xs text-gray-400 mt-1">
-            PDF, DOCX, XLSX, PPTX, JPG, PNG, TXT, ZIP — Max 1GB per file
-          </p>
-          <input
-            id="file-input"
-            type="file"
-            multiple
-            className="hidden"
-            accept={ACCEPTED_TYPES.join(",")}
-            onChange={onFileInput}
-          />
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* File list */}
-      {files.length > 0 && (
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-gray-700">
-              {files.length} file{files.length !== 1 ? "s" : ""} selected
-              {doneCount > 0 && ` · ${doneCount} uploaded`}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            {files.map((item) => (
-              <div key={item.id} className="space-y-1.5">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(item)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {item.file.name}
-                    </p>
-                    <p className={cn(
-                      "text-xs",
-                      item.status === "error" ? "text-red-500" :
-                      item.status === "done" ? "text-green-600" : "text-gray-400"
-                    )}>
-                      {formatFileSize(item.file.size)} · {getStatusLabel(item)}
-                    </p>
-                  </div>
-                  {item.status === "waiting" && (
-                    <button
-                      onClick={() => removeFile(item.id)}
-                      className="text-gray-400 hover:text-gray-600 shrink-0"
-                    >
-                      <X size={15} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                {(item.status === "uploading" || item.status === "encrypting") && (
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden ml-7">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-300",
-                        item.status === "encrypting" ? "bg-yellow-400 w-full animate-pulse" : "bg-slate-900"
-                      )}
-                      style={item.status === "uploading" ? { width: `${item.progress}%` } : {}}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+        {/* Drop zone */}
+        <Card
+          className={cn(
+            "border-2 border-dashed transition-colors cursor-pointer",
+            isDragging ? "border-slate-900 bg-slate-50" : "border-gray-200 hover:border-gray-300"
+          )}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onClick={() => document.getElementById("file-input")?.click()}
+        >
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className={cn(
+              "rounded-full p-4 mb-4 transition-colors",
+              isDragging ? "bg-slate-200" : "bg-gray-100"
+            )}>
+              <Upload size={28} className="text-gray-500" />
+            </div>
+            <p className="text-sm font-medium text-gray-700">
+              Drag and drop files here, or click to browse
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              PDF, DOCX, XLSX, PPTX, JPG, PNG, TXT, ZIP — Max 1GB per file
+            </p>
+            <input
+              id="file-input"
+              type="file"
+              multiple
+              className="hidden"
+              accept={ACCEPTED_TYPES.join(",")}
+              onChange={onFileInput}
+            />
           </CardContent>
         </Card>
-      )}
 
-      {/* Upload button */}
-      {waitingCount > 0 && (
-        <Button
-          onClick={handleUpload}
-          disabled={isUploading}
-          className="w-full"
-        >
-          {isUploading
-            ? "Uploading..."
-            : `Upload ${waitingCount} file${waitingCount !== 1 ? "s" : ""}`}
-        </Button>
-      )}
+        {/* File list */}
+        {files.length > 0 && (
+          <Card className="border border-gray-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-700">
+                {files.length} file{files.length !== 1 ? "s" : ""} selected
+                {doneCount > 0 && ` · ${doneCount} uploaded`}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              {files.map((item) => (
+                <div key={item.id} className="space-y-1.5">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(item)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {item.file.name}
+                      </p>
+                      <p className={cn(
+                        "text-xs",
+                        item.status === "error" ? "text-red-500" :
+                        item.status === "done" ? "text-green-600" : "text-gray-400"
+                      )}>
+                        {formatFileSize(item.file.size)} · {getStatusLabel(item)}
+                      </p>
+                    </div>
+                    {item.status === "waiting" && (
+                      <button
+                        onClick={() => removeFile(item.id)}
+                        className="text-gray-400 hover:text-gray-600 shrink-0"
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
+                  </div>
 
-      {/* Encryption notice */}
-      <p className="text-xs text-gray-400 text-center">
-        🔒 Files are encrypted using AES-GCM 256-bit before leaving your browser.
-        The server never sees your original files.
-      </p>
+                  {/* Progress bar */}
+                  {(item.status === "uploading" || item.status === "encrypting") && (
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden ml-7">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-300",
+                          item.status === "encrypting" ? "bg-yellow-400 w-full animate-pulse" : "bg-slate-900"
+                        )}
+                        style={item.status === "uploading" ? { width: `${item.progress}%` } : {}}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
+        {/* Upload button */}
+        {waitingCount > 0 && (
+          <Button
+            onClick={handleUpload}
+            disabled={isUploading}
+            className="w-full"
+          >
+            {isUploading
+              ? "Uploading..."
+              : `Upload ${waitingCount} file${waitingCount !== 1 ? "s" : ""}`}
+          </Button>
+        )}
+
+        {/* Encryption notice */}
+        <p className="text-xs text-gray-400 text-center">
+          🔒 Files are encrypted using AES-GCM 256-bit before leaving your browser.
+          The server never sees your original files.
+        </p>
+
+      </div>
     </div>
   )
 }
