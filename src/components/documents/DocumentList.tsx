@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import {
-  Download, Share2, Trash2, Clock, MoreVertical, Eye
-} from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
+import { Download, Share2, Trash2, Clock, MoreVertical, Eye } from "lucide-react"
 import { Document } from "@/types"
 import { formatFileSize, getFileIcon } from "@/lib/mockData"
 import { Button } from "@/components/ui/button"
@@ -20,8 +19,60 @@ const statusStyles: Record<string, string> = {
   rejected: "bg-red-100 text-red-700",
 }
 
+const menuActions = [
+  { icon: Eye, label: "Preview" },
+  { icon: Download, label: "Download" },
+  { icon: Share2, label: "Share" },
+  { icon: Clock, label: "Version History" },
+  { icon: Trash2, label: "Delete", danger: true },
+]
+
 export default function DocumentList({ documents }: DocumentListProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      setActiveMenu(null)
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveMenu(null)
+    }
+    const handleScroll = () => setActiveMenu(null)
+
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleKey)
+    window.addEventListener("scroll", handleScroll, true)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleKey)
+      window.removeEventListener("scroll", handleScroll, true)
+    }
+  }, [])
+
+  const openMenu = (docId: string) => {
+  if (activeMenu === docId) {
+    setActiveMenu(null)
+    return
+  }
+  const btn = buttonRefs.current[docId]
+  if (btn) {
+    const rect = btn.getBoundingClientRect()
+    const menuHeight = 160
+    const spaceBelow = window.innerHeight - rect.bottom
+    
+    const top = spaceBelow < menuHeight
+      ? rect.top + window.scrollY - menuHeight - 4  // flip above
+      : rect.bottom + window.scrollY + 4             // show below
+
+    setMenuPos({
+      top,
+      left: rect.right + window.scrollX - 160,
+    })
+  }
+  setActiveMenu(docId)
+}
 
   if (documents.length === 0) {
     return (
@@ -33,91 +84,95 @@ export default function DocumentList({ documents }: DocumentListProps) {
   }
 
   return (
-    <div className="divide-y divide-gray-100">
-      {/* Header */}
-      <div className="grid grid-cols-12 px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wide">
-        <div className="col-span-5">Name</div>
-        <div className="col-span-2">Status</div>
-        <div className="col-span-2">Size</div>
-        <div className="col-span-2">Modified</div>
-        <div className="col-span-1"></div>
-      </div>
+    <>
+      <div className="divide-y divide-gray-100">
+        {/* Header */}
+        <div className="grid grid-cols-12 px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wide">
+          <div className="col-span-5">Name</div>
+          <div className="col-span-2">Status</div>
+          <div className="col-span-2">Size</div>
+          <div className="col-span-2">Modified</div>
+          <div className="col-span-1"></div>
+        </div>
 
-      {documents.map((doc) => (
-        <div
-          key={doc.id}
-          className="grid grid-cols-12 px-4 py-3 items-center hover:bg-gray-50 transition-colors group"
-        >
-          {/* Name */}
-          <div className="col-span-5 flex items-center gap-3 min-w-0">
-            <span className="text-xl shrink-0">{getFileIcon(doc.mimeType)}</span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{doc.name}</p>
-              <p className="text-xs text-gray-400 truncate">
-                v{doc.version} · {doc.owner}
-              </p>
+        {documents.map((doc) => (
+          <div
+            key={doc.id}
+            className="grid grid-cols-12 px-4 py-3 items-center hover:bg-gray-50 transition-colors group"
+          >
+            {/* Name */}
+            <div className="col-span-5 flex items-center gap-3 min-w-0">
+              <span className="text-xl shrink-0">{getFileIcon(doc.mimeType)}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-800 truncate">{doc.name}</p>
+                <p className="text-xs text-gray-400 truncate">
+                  v{doc.version} · {doc.owner}
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Status */}
-          <div className="col-span-2">
-            <span className={cn(
-              "text-xs px-2 py-0.5 rounded-full font-medium capitalize",
-              statusStyles[doc.status]
-            )}>
-              {doc.status}
-            </span>
-          </div>
+            {/* Status */}
+            <div className="col-span-2">
+              <span className={cn(
+                "text-xs px-2 py-0.5 rounded-full font-medium capitalize",
+                statusStyles[doc.status]
+              )}>
+                {doc.status}
+              </span>
+            </div>
 
-          {/* Size */}
-          <div className="col-span-2 text-sm text-gray-500">
-            {formatFileSize(doc.size)}
-          </div>
+            {/* Size */}
+            <div className="col-span-2 text-sm text-gray-500">
+              {formatFileSize(doc.size)}
+            </div>
 
-          {/* Date */}
-          <div className="col-span-2 text-sm text-gray-500">
-            {new Date(doc.updatedAt).toLocaleDateString()}
-          </div>
+            {/* Date */}
+            <div className="col-span-2 text-sm text-gray-500">
+              {new Date(doc.updatedAt).toLocaleDateString()}
+            </div>
 
-          {/* Actions */}
-          <div className="col-span-1 flex justify-end">
-            <div className="relative">
+            {/* Actions */}
+            <div className="col-span-1 flex justify-end">
               <Button
+                ref={(el) => { buttonRefs.current[doc.id] = el }}
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                onClick={() => setActiveMenu(activeMenu === doc.id ? null : doc.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openMenu(doc.id)
+                }}
               >
                 <MoreVertical size={14} />
               </Button>
-
-              {activeMenu === doc.id && (
-                <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-40 py-1">
-                  {[
-                    { icon: Eye, label: "Preview" },
-                    { icon: Download, label: "Download" },
-                    { icon: Share2, label: "Share" },
-                    { icon: Clock, label: "Version History" },
-                    { icon: Trash2, label: "Delete", danger: true },
-                  ].map((action) => (
-                    <button
-                      key={action.label}
-                      className={cn(
-                        "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-gray-50",
-                        action.danger ? "text-red-500" : "text-gray-700"
-                      )}
-                      onClick={() => setActiveMenu(null)}
-                    >
-                      <action.icon size={13} />
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Portal dropdown — renders outside all overflow containers */}
+      {activeMenu && createPortal(
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] w-40 py-1"
+          style={{ top: menuPos.top, left: menuPos.left }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {menuActions.map((action) => (
+            <button
+              key={action.label}
+              className={cn(
+                "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-gray-50",
+                action.danger ? "text-red-500" : "text-gray-700"
+              )}
+              onClick={() => setActiveMenu(null)}
+            >
+              <action.icon size={13} />
+              {action.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
   )
 }

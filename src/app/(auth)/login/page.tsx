@@ -42,35 +42,35 @@ export default function LoginPage() {
   })
 
   const onSubmit = (data: LoginForm) => {
-  setIsLoading(true)
-  setError(null)
+    setIsLoading(true)
+    setError(null)
 
-  setTimeout(() => {
-    const found = MOCK_USERS.find(
-      (u) => u.email === data.email && u.password === data.password
-    )
-
-    if (found) {
-      setAuth(
-        {
-          id: "1",
-          name: found.name,
-          email: found.email,
-          role: found.role,
-          createdAt: new Date().toISOString(),
-          status: "active",
-          lastLogin: new Date().toISOString(),
-          documentsCount: 0,
-        },
-        "mock-token"
+    setTimeout(() => {
+      const found = MOCK_USERS.find(
+        (u) => u.email === data.email && u.password === data.password
       )
-      router.push("/dashboard")
-    } else {
-      setError("Invalid email or password.")
-    }
-    setIsLoading(false)
-  }, 800)
-}
+
+      if (found) {
+        setAuth(
+          {
+            id: "1",
+            name: found.name,
+            email: found.email,
+            role: found.role,
+            createdAt: new Date().toISOString(),
+            status: "active",
+            lastLogin: new Date().toISOString(),
+            documentsCount: 0,
+          },
+          "mock-token"
+        )
+        router.push("/dashboard")
+      } else {
+        setError("Invalid email or password.")
+      }
+      setIsLoading(false)
+    }, 800)
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

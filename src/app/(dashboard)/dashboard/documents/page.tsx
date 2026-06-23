@@ -16,17 +16,19 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
 
+  const [documents, setDocuments] = useState(mockDocuments)
+
   const folderTree = useMemo(() => buildFolderTree(mockFolders), [])
 
   const filteredDocuments = useMemo(() => {
-    return mockDocuments.filter((doc) => {
+    return documents.filter((doc) => {
       const matchesFolder = selectedFolderId === null || doc.folderId === selectedFolderId
       const matchesSearch = doc.name.toLowerCase().includes(search.toLowerCase()) ||
         doc.tags?.some((t) => t.includes(search.toLowerCase()))
       const matchesStatus = statusFilter === "all" || doc.status === statusFilter
       return matchesFolder && matchesSearch && matchesStatus
     })
-  }, [selectedFolderId, search, statusFilter])
+  }, [documents, selectedFolderId, search, statusFilter])
 
   return (
     <div className="space-y-4">
@@ -85,11 +87,10 @@ export default function DocumentsPage() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${
-                    statusFilter === s
+                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${statusFilter === s
                       ? "bg-slate-900 text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   {s}
                 </button>
@@ -98,7 +99,7 @@ export default function DocumentsPage() {
           </div>
 
           {/* Document list */}
-          <Card className="border border-gray-200 shadow-sm overflow-hidden">
+          <Card className="border border-gray-200 shadow-sm">
             <DocumentList documents={filteredDocuments} />
           </Card>
 
