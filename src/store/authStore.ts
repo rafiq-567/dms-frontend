@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 import { User } from "@/types"
+import { useCryptoStore } from "./cryptoStore"
 
 interface AuthState {
   user: User | null
@@ -35,8 +36,10 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) =>
         set({ user, accessToken: token, isAuthenticated: true }),
 
-      logout: () =>
-        set({ user: null, accessToken: null, isAuthenticated: false }),
+      logout: () => {
+        useCryptoStore.getState().clearMasterKey()  // wipe key from RAM
+        set({ user: null, accessToken: null, isAuthenticated: false })
+      },
     }),
     {
       name: "auth-storage",
