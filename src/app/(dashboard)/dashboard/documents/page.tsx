@@ -17,7 +17,13 @@ export default function DocumentsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [documents, setDocuments] = useState(mockDocuments)
 
-  // Folder states
+
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null)
+  const [editTags, setEditTags] = useState<string[]>([])
+  const [editTagInput, setEditTagInput] = useState("")
+  const [editStatus, setEditStatus] = useState<Document["status"]>("draft")
+
+  // Folder states 
   const [folders, setFolders] = useState(mockFolders)
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
@@ -38,6 +44,35 @@ export default function DocumentsPage() {
 
   const handleDelete = (id: string) => {
     setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+  }
+
+  const handleEditMetadata = (doc: Document) => {
+    setEditingDoc(doc)
+    setEditTags(doc.tags || [])
+    setEditStatus(doc.status)
+  }
+
+  const handleAddTag = () => {
+    const tag = editTagInput.trim().toLowerCase()
+    if (!tag || editTags.includes(tag)) return
+    setEditTags((prev) => [...prev, tag])
+    setEditTagInput("")
+  }
+
+  const handleRemoveTag = (tag: string) => {
+    setEditTags((prev) => prev.filter((t) => t !== tag))
+  }
+
+  const handleSaveMetadata = () => {
+    if (!editingDoc) return
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === editingDoc.id
+          ? { ...doc, tags: editTags, status: editStatus, updatedAt: new Date().toISOString() }
+          : doc
+      )
+    )
+    setEditingDoc(null)
   }
 
   const handleCreateFolder = () => {
@@ -124,11 +159,10 @@ export default function DocumentsPage() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${
-                    statusFilter === s
-                      ? "bg-slate-900 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${statusFilter === s
+                    ? "bg-slate-900 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
                 >
                   {s}
                 </button>
@@ -138,7 +172,7 @@ export default function DocumentsPage() {
 
           {/* Document list */}
           <Card className="border border-gray-200 shadow-sm">
-            <DocumentList documents={filteredDocuments} onDelete={handleDelete} />
+            <DocumentList documents={filteredDocuments} onDelete={handleDelete} onEditMetadata={handleEditMetadata} />
           </Card>
 
         </div>
@@ -208,6 +242,102 @@ export default function DocumentsPage() {
         </div>
       )}
 
+      {/* Metadata + Tags Modal */}
+      {editingDoc && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">Tags & Metadata</h3>
+              <button onClick={() => setEditingDoc(null)} className="text-gray-400 hover:text-gray-600">
+                ✕
+              </button>
+            </div>
+
+            {/* File info */}
+            <div className="bg-gray-50 rounded-lg px-3 py-2">
+              <p className="text-sm font-medium text-gray-800">{editingDoc.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5">v{editingDoc.version} · {editingDoc.owner}</p>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">Status</label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value as Document["status"])}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tags</label>
+
+              {/* Existing tags */}
+              <div className="flex flex-wrap gap-1.5">
+                {editTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="flex items-center gap-1 text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full"
+                  >
+                    #{tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                {editTags.length === 0 && (
+                  <p className="text-xs text-gray-400">No tags yet</p>
+                )}
+              </div>
+
+              {/* Add tag input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a tag..."
+                  value={editTagInput}
+                  onChange={(e) => setEditTagInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300"
+                />
+                <button
+                  onClick={handleAddTag}
+                  className="px-3 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-700"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setEditingDoc(null)}
+                className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveMetadata}
+                className="flex-1 bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700"
+              >
+                Save Changes
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }

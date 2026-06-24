@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
-import { Download, Share2, Trash2, Clock, MoreVertical, Eye } from "lucide-react"
+import { Download, Share2, Trash2, Clock, MoreVertical, Eye, Tag } from "lucide-react"
 import { Document } from "@/types"
 import { formatFileSize, getFileIcon } from "@/lib/mockData"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 interface DocumentListProps {
   documents: Document[]
   onDelete: (id: string) => void
+  onEditMetadata: (doc: Document) => void
 }
 
 const statusStyles: Record<string, string> = {
@@ -24,11 +25,12 @@ const menuActions = [
   { icon: Eye, label: "Preview" },
   { icon: Download, label: "Download" },
   { icon: Share2, label: "Share" },
+  { icon: Tag, label: "Tags & Metadata" },
   { icon: Clock, label: "Version History" },
   { icon: Trash2, label: "Delete", danger: true },
 ]
 
-export default function DocumentList({ documents, onDelete }: DocumentListProps) {
+export default function DocumentList({ documents, onDelete, onEditMetadata }: DocumentListProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -146,8 +148,10 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
                 action.danger ? "text-red-500" : "text-gray-700"
               )}
               onClick={() => {
-                if (action.label === "Delete") {
-                  onDelete(activeMenu)
+                const currentDoc = documents.find(d => d.id === activeMenu)
+                if (currentDoc) {
+                  if (action.label === "Delete") onDelete(currentDoc.id)
+                  if (action.label === "Tags & Metadata") onEditMetadata(currentDoc)
                 }
                 setActiveMenu(null)
               }}
