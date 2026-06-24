@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuthStore } from "@/store"
+import { useAuthStore, useCryptoStore } from "@/store"
+import { deriveKeysFromPassword } from "@/lib/crypto"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -20,18 +21,42 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>
 
+// In production, the salt is fetched from the server per user.
+// Here each mock user has a fixed salt so the same password always
+// derives the same masterKey — simulating real behavior.
 const MOCK_USERS = [
-  { email: "admin@dms.com", password: "123456", role: "admin" as const, name: "Admin User" },
-  { email: "manager@dms.com", password: "123456", role: "manager" as const, name: "Sarah Johnson" },
-  { email: "user@dms.com", password: "123456", role: "user" as const, name: "Mike Davis" },
+  {
+    email: "admin@dms.com",
+    password: "123456",
+    role: "admin" as const,
+    name: "Admin User",
+    salt: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+  },
+  {
+    email: "manager@dms.com",
+    password: "123456",
+    role: "manager" as const,
+    name: "Sarah Johnson",
+    salt: "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+  },
+  {
+    email: "user@dms.com",
+    password: "123456",
+    role: "user" as const,
+    name: "Mike Davis",
+    salt: "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6",
+  },
 ]
 
 export default function LoginPage() {
   const router = useRouter()
   const { setAuth } = useAuthStore()
+  const { setMasterKey } = useCryptoStore()
+
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading]       = useState(false)
+  const [error, setError]               = useState<string | null>(null)
+  const [phase, setPhase]               = useState<"idle" | "verifying" | "deriving">("idle")
 
   const {
     register,
@@ -41,35 +66,79 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = (data: LoginForm) => {
+  const onSubmit = async (data: LoginForm) => {
     setIsLoading(true)
     setError(null)
 
-    setTimeout(() => {
+    try {
+      // ── Phase 1: Verify credentials ──
+      // In production: const { salt } = await api.post("/auth/preflight", { email })
+      // The preflight endpoint returns the user's salt without revealing
+      // whether the account exists (prevents user enumeration attacks).
+      setPhase("verifying")
+      await new Promise((r) => setTimeout(r, 600)) // simulate network
+
       const found = MOCK_USERS.find(
         (u) => u.email === data.email && u.password === data.password
       )
 
-      if (found) {
-        setAuth(
-          {
-            id: "1",
-            name: found.name,
-            email: found.email,
-            role: found.role,
-            createdAt: new Date().toISOString(),
-            status: "active",
-            lastLogin: new Date().toISOString(),
-            documentsCount: 0,
-          },
-          "mock-token"
-        )
-        router.push("/dashboard")
-      } else {
+      if (!found) {
         setError("Invalid email or password.")
+        setIsLoading(false)
+        setPhase("idle")
+        return
       }
+
+      // ── Phase 2: Derive masterKey from password + salt ──
+      // This runs PBKDF2 with 200,000 iterations — takes ~300ms on purpose.
+      // The masterKey never leaves this function.
+      // Only the authHash would be sent to the server in production.
+      setPhase("deriving")
+      const { masterKey, authHash } = deriveKeysFromPassword(data.password, found.salt)
+
+      // In production, send authHash to server for verification:
+      // await api.post("/auth/login", { email: data.email, authHash })
+      // The server hashes authHash again with argon2 and compares to DB.
+      // Here we just log it to show it's being generated correctly.
+      console.log("[ZK] authHash derived:", authHash.slice(0, 16) + "...")
+
+      // ── Phase 3: Store masterKey in RAM only ──
+      // useCryptoStore has NO persist middleware — this lives in RAM only.
+      // Closing the tab destroys it permanently.
+      setMasterKey(masterKey)
+
+      // ── Phase 4: Save user session to cookie ──
+      // accessToken goes to cookie (via authStore persist).
+      // masterKey does NOT — it stays in RAM only.
+      setAuth(
+        {
+          id: "1",
+          name: found.name,
+          email: found.email,
+          role: found.role,
+          createdAt: new Date().toISOString(),
+          status: "active",
+          lastLogin: new Date().toISOString(),
+          documentsCount: 0,
+        },
+        "mock-token"
+      )
+
+      router.push("/dashboard")
+
+    } catch (err) {
+      setError("Something went wrong. Please try again.")
+    } finally {
       setIsLoading(false)
-    }, 800)
+      setPhase("idle")
+    }
+  }
+
+  // Dynamic button label based on which phase is running
+  const buttonLabel = () => {
+    if (phase === "verifying") return "Verifying..."
+    if (phase === "deriving")  return "Deriving encryption key..."
+    return "Sign In"
   }
 
   return (
@@ -129,6 +198,13 @@ export default function LoginPage() {
               )}
             </div>
 
+            {/* Zero-knowledge notice */}
+            {phase === "deriving" && (
+              <div className="bg-slate-50 border border-slate-200 text-slate-600 text-xs rounded-lg px-4 py-3">
+                🔐 Deriving your encryption key locally. Your password never leaves this device.
+              </div>
+            )}
+
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
                 {error}
@@ -136,9 +212,8 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
+              {buttonLabel()}
             </Button>
-
 
           </form>
         </CardContent>
