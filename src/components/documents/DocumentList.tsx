@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface DocumentListProps {
-  documents: Document[]
+  documents: Document[];
+  onDelete: (id: string) => void;
 }
 
 const statusStyles: Record<string, string> = {
@@ -27,7 +28,7 @@ const menuActions = [
   { icon: Trash2, label: "Delete", danger: true },
 ]
 
-export default function DocumentList({ documents }: DocumentListProps) {
+export default function DocumentList({ documents, onDelete }: DocumentListProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -52,27 +53,27 @@ export default function DocumentList({ documents }: DocumentListProps) {
   }, [])
 
   const openMenu = (docId: string) => {
-  if (activeMenu === docId) {
-    setActiveMenu(null)
-    return
-  }
-  const btn = buttonRefs.current[docId]
-  if (btn) {
-    const rect = btn.getBoundingClientRect()
-    const menuHeight = 160
-    const spaceBelow = window.innerHeight - rect.bottom
-    
-    const top = spaceBelow < menuHeight
-      ? rect.top + window.scrollY - menuHeight - 4  // flip above
-      : rect.bottom + window.scrollY + 4             // show below
+    if (activeMenu === docId) {
+      setActiveMenu(null)
+      return
+    }
+    const btn = buttonRefs.current[docId]
+    if (btn) {
+      const rect = btn.getBoundingClientRect()
+      const menuHeight = 160
+      const spaceBelow = window.innerHeight - rect.bottom
 
-    setMenuPos({
-      top,
-      left: rect.right + window.scrollX - 160,
-    })
+      const top = spaceBelow < menuHeight
+        ? rect.top + window.scrollY - menuHeight - 4  // flip above
+        : rect.bottom + window.scrollY + 4             // show below
+
+      setMenuPos({
+        top,
+        left: rect.right + window.scrollX - 160,
+      })
+    }
+    setActiveMenu(docId)
   }
-  setActiveMenu(docId)
-}
 
   if (documents.length === 0) {
     return (
@@ -164,7 +165,14 @@ export default function DocumentList({ documents }: DocumentListProps) {
                 "flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-gray-50",
                 action.danger ? "text-red-500" : "text-gray-700"
               )}
-              onClick={() => setActiveMenu(null)}
+              onClick={() => {
+                // 1. If it's the delete button, call the onDelete function
+                if (action.label === "Delete" && activeMenu) {
+                  onDelete(activeMenu)
+                }
+                // 2. Close the dropdown menu
+                setActiveMenu(null)
+              }}
             >
               <action.icon size={13} />
               {action.label}

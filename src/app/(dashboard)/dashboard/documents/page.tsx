@@ -20,6 +20,10 @@ export default function DocumentsPage() {
 
   const folderTree = useMemo(() => buildFolderTree(mockFolders), [])
 
+  const handleDelete = (id: string) => {
+  setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+}
+
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
       const matchesFolder = selectedFolderId === null || doc.folderId === selectedFolderId
@@ -100,7 +104,7 @@ export default function DocumentsPage() {
 
           {/* Document list */}
           <Card className="border border-gray-200 shadow-sm">
-            <DocumentList documents={filteredDocuments} />
+            <DocumentList documents={filteredDocuments} onDelete={handleDelete}/>
           </Card>
 
         </div>
