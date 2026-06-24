@@ -15,14 +15,16 @@ export default function DocumentsPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-
   const [documents, setDocuments] = useState(mockDocuments)
 
-  const folderTree = useMemo(() => buildFolderTree(mockFolders), [])
+  // Folder states
+  const [folders, setFolders] = useState(mockFolders)
+  const [showNewFolder, setShowNewFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
+  const [renamingName, setRenamingName] = useState("")
 
-  const handleDelete = (id: string) => {
-  setDocuments((prev) => prev.filter((doc) => doc.id !== id))
-}
+  const folderTree = useMemo(() => buildFolderTree(folders), [folders])
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
@@ -33,6 +35,33 @@ export default function DocumentsPage() {
       return matchesFolder && matchesSearch && matchesStatus
     })
   }, [documents, selectedFolderId, search, statusFilter])
+
+  const handleDelete = (id: string) => {
+    setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+  }
+
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) return
+    const newFolder = {
+      id: `f${folders.length + 1}`,
+      name: newFolderName.trim(),
+      parentId: selectedFolderId,
+      ownerId: "1",
+      createdAt: new Date().toISOString(),
+    }
+    setFolders((prev) => [...prev, newFolder])
+    setNewFolderName("")
+    setShowNewFolder(false)
+  }
+
+  const handleRenameFolder = () => {
+    if (!renamingName.trim()) return
+    setFolders((prev) =>
+      prev.map((f) => f.id === renamingFolderId ? { ...f, name: renamingName.trim() } : f)
+    )
+    setRenamingFolderId(null)
+    setRenamingName("")
+  }
 
   return (
     <div className="space-y-4">
@@ -46,7 +75,7 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowNewFolder(true)}>
             <FolderPlus size={15} />
             New Folder
           </Button>
@@ -68,6 +97,10 @@ export default function DocumentsPage() {
             folders={folderTree}
             selectedFolderId={selectedFolderId}
             onSelectFolder={setSelectedFolderId}
+            onRenameFolder={(id, name) => {
+              setRenamingFolderId(id)
+              setRenamingName(name)
+            }}
           />
         </Card>
 
@@ -91,10 +124,11 @@ export default function DocumentsPage() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${statusFilter === s
+                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${
+                    statusFilter === s
                       ? "bg-slate-900 text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                  }`}
                 >
                   {s}
                 </button>
@@ -104,11 +138,76 @@ export default function DocumentsPage() {
 
           {/* Document list */}
           <Card className="border border-gray-200 shadow-sm">
-            <DocumentList documents={filteredDocuments} onDelete={handleDelete}/>
+            <DocumentList documents={filteredDocuments} onDelete={handleDelete} />
           </Card>
 
         </div>
       </div>
+
+      {/* New Folder Modal */}
+      {showNewFolder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">New Folder</h3>
+            <input
+              type="text"
+              placeholder="Folder name..."
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowNewFolder(false)}
+                className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFolder}
+                className="flex-1 bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Folder Modal */}
+      {renamingFolderId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Rename Folder</h3>
+            <input
+              type="text"
+              placeholder="New folder name..."
+              value={renamingName}
+              onChange={(e) => setRenamingName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRenameFolder()}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRenamingFolderId(null)}
+                className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenameFolder}
+                className="flex-1 bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700"
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

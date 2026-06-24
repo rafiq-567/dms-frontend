@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react"
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Pencil } from "lucide-react"
 import { Folder as FolderType } from "@/types"
 import { cn } from "@/lib/utils"
 
@@ -9,17 +9,20 @@ interface FolderTreeProps {
   folders: FolderType[]
   selectedFolderId: string | null
   onSelectFolder: (id: string | null) => void
+  onRenameFolder: (id: string, currentName: string) => void
 }
 
 function FolderNode({
   folder,
   selectedFolderId,
   onSelectFolder,
+  onRenameFolder,
   depth,
 }: {
   folder: FolderType
   selectedFolderId: string | null
   onSelectFolder: (id: string | null) => void
+  onRenameFolder: (id: string, currentName: string) => void
   depth: number
 }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -28,31 +31,45 @@ function FolderNode({
 
   return (
     <div>
-      <button
-        onClick={() => {
-          onSelectFolder(folder.id)
-          if (hasChildren) setIsOpen(!isOpen)
-        }}
+      <div
         className={cn(
-          "flex items-center gap-1.5 w-full text-left px-2 py-1.5 rounded-lg text-sm transition-colors",
+          "flex items-center gap-1.5 w-full text-left px-2 py-1.5 rounded-lg text-sm transition-colors group",
           isSelected
             ? "bg-slate-100 text-slate-900 font-medium"
             : "text-gray-600 hover:bg-gray-50"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
-        {hasChildren ? (
-          isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />
-        ) : (
-          <span className="w-3.5" />
-        )}
-        {isOpen ? (
-          <FolderOpen size={15} className="text-yellow-500 shrink-0" />
-        ) : (
-          <Folder size={15} className="text-yellow-500 shrink-0" />
-        )}
-        <span className="truncate">{folder.name}</span>
-      </button>
+        <button
+          onClick={() => {
+            onSelectFolder(folder.id)
+            if (hasChildren) setIsOpen(!isOpen)
+          }}
+          className="flex items-center gap-1.5 flex-1 min-w-0"
+        >
+          {hasChildren ? (
+            isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+          ) : (
+            <span className="w-3.5" />
+          )}
+          {isOpen ? (
+            <FolderOpen size={15} className="text-yellow-500 shrink-0" />
+          ) : (
+            <Folder size={15} className="text-yellow-500 shrink-0" />
+          )}
+          <span className="truncate">{folder.name}</span>
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRenameFolder(folder.id, folder.name)
+          }}
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 shrink-0"
+        >
+          <Pencil size={12} />
+        </button>
+      </div>
 
       {isOpen && hasChildren && (
         <div>
@@ -62,6 +79,7 @@ function FolderNode({
               folder={child}
               selectedFolderId={selectedFolderId}
               onSelectFolder={onSelectFolder}
+              onRenameFolder={onRenameFolder}
               depth={depth + 1}
             />
           ))}
@@ -71,7 +89,7 @@ function FolderNode({
   )
 }
 
-export default function FolderTree({ folders, selectedFolderId, onSelectFolder }: FolderTreeProps) {
+export default function FolderTree({ folders, selectedFolderId, onSelectFolder, onRenameFolder }: FolderTreeProps) {
   return (
     <div className="space-y-0.5">
       <button
@@ -93,6 +111,7 @@ export default function FolderTree({ folders, selectedFolderId, onSelectFolder }
           folder={folder}
           selectedFolderId={selectedFolderId}
           onSelectFolder={onSelectFolder}
+          onRenameFolder={onRenameFolder}
           depth={0}
         />
       ))}

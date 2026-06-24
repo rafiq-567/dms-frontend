@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface DocumentListProps {
-  documents: Document[];
-  onDelete: (id: string) => void;
+  documents: Document[]
+  onDelete: (id: string) => void
 }
 
 const statusStyles: Record<string, string> = {
@@ -34,21 +34,15 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      setActiveMenu(null)
-    }
+    const handleClickOutside = () => setActiveMenu(null)
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setActiveMenu(null)
     }
-    const handleScroll = () => setActiveMenu(null)
-
     document.addEventListener("mousedown", handleClickOutside)
     document.addEventListener("keydown", handleKey)
-    window.addEventListener("scroll", handleScroll, true)
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("keydown", handleKey)
-      window.removeEventListener("scroll", handleScroll, true)
     }
   }, [])
 
@@ -60,15 +54,8 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
     const btn = buttonRefs.current[docId]
     if (btn) {
       const rect = btn.getBoundingClientRect()
-      const menuHeight = 160
-      const spaceBelow = window.innerHeight - rect.bottom
-
-      const top = spaceBelow < menuHeight
-        ? rect.top + window.scrollY - menuHeight - 4  // flip above
-        : rect.bottom + window.scrollY + 4             // show below
-
       setMenuPos({
-        top,
+        top: rect.bottom + window.scrollY + 4,
         left: rect.right + window.scrollX - 160,
       })
     }
@@ -87,7 +74,6 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
   return (
     <>
       <div className="divide-y divide-gray-100">
-        {/* Header */}
         <div className="grid grid-cols-12 px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wide">
           <div className="col-span-5">Name</div>
           <div className="col-span-2">Status</div>
@@ -101,7 +87,6 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
             key={doc.id}
             className="grid grid-cols-12 px-4 py-3 items-center hover:bg-gray-50 transition-colors group"
           >
-            {/* Name */}
             <div className="col-span-5 flex items-center gap-3 min-w-0">
               <span className="text-xl shrink-0">{getFileIcon(doc.mimeType)}</span>
               <div className="min-w-0">
@@ -112,7 +97,6 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
               </div>
             </div>
 
-            {/* Status */}
             <div className="col-span-2">
               <span className={cn(
                 "text-xs px-2 py-0.5 rounded-full font-medium capitalize",
@@ -122,17 +106,14 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
               </span>
             </div>
 
-            {/* Size */}
             <div className="col-span-2 text-sm text-gray-500">
               {formatFileSize(doc.size)}
             </div>
 
-            {/* Date */}
             <div className="col-span-2 text-sm text-gray-500">
               {new Date(doc.updatedAt).toLocaleDateString()}
             </div>
 
-            {/* Actions */}
             <div className="col-span-1 flex justify-end">
               <Button
                 ref={(el) => { buttonRefs.current[doc.id] = el }}
@@ -151,7 +132,6 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
         ))}
       </div>
 
-      {/* Portal dropdown — renders outside all overflow containers */}
       {activeMenu && createPortal(
         <div
           className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] w-40 py-1"
@@ -166,11 +146,9 @@ export default function DocumentList({ documents, onDelete }: DocumentListProps)
                 action.danger ? "text-red-500" : "text-gray-700"
               )}
               onClick={() => {
-                // 1. If it's the delete button, call the onDelete function
-                if (action.label === "Delete" && activeMenu) {
+                if (action.label === "Delete") {
                   onDelete(activeMenu)
                 }
-                // 2. Close the dropdown menu
                 setActiveMenu(null)
               }}
             >
