@@ -12,6 +12,7 @@ interface DocumentListProps {
   documents: Document[]
   onDelete: (id: string) => void
   onEditMetadata: (doc: Document) => void
+  onPreview: (doc: Document) => void
 }
 
 const statusStyles: Record<string, string> = {
@@ -30,7 +31,7 @@ const menuActions = [
   { icon: Trash2, label: "Delete", danger: true },
 ]
 
-export default function DocumentList({ documents, onDelete, onEditMetadata }: DocumentListProps) {
+export default function DocumentList({ documents, onDelete, onEditMetadata, onPreview }: DocumentListProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -152,6 +153,7 @@ export default function DocumentList({ documents, onDelete, onEditMetadata }: Do
                 if (currentDoc) {
                   if (action.label === "Delete") onDelete(currentDoc.id)
                   if (action.label === "Tags & Metadata") onEditMetadata(currentDoc)
+                    if (action.label === "Preview") onPreview(currentDoc)
                 }
                 setActiveMenu(null)
               }}
@@ -163,6 +165,8 @@ export default function DocumentList({ documents, onDelete, onEditMetadata }: Do
         </div>,
         document.body
       )}
+
+      
     </>
   )
 }
