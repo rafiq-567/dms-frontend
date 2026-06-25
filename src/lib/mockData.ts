@@ -1,4 +1,5 @@
 import { Document, Folder, User } from "@/types"
+import { ShareRecord } from "@/types"
 
 export const mockFolders: Folder[] = [
   { id: "f1", name: "HR Documents", parentId: null, ownerId: "1", createdAt: "2026-01-01" },
@@ -130,3 +131,22 @@ export function buildFolderTree(folders: Folder[]): Folder[] {
   })
   return roots
 }
+
+export const mockShares: ShareRecord[] = [
+  {
+    id: "sh1",
+    documentId: "d1",
+    userId: "2",
+    permission: "view",
+    sharedBy: "1",
+    sharedAt: "2026-05-01",
+  },
+  {
+    id: "sh2",
+    documentId: "d2",
+    userId: "3",
+    permission: "download",
+    sharedBy: "1",
+    sharedAt: "2026-05-10",
+  },
+]

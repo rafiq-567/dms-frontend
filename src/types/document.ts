@@ -28,3 +28,12 @@ export interface UploadProgress {
   progress: number
   status: "encrypting" | "uploading" | "done" | "error"
 }
+
+export interface ShareRecord {
+  id: string
+  documentId: string
+  userId: string
+  permission: "view" | "download" | "edit"
+  sharedBy: string
+  sharedAt: string
+}
