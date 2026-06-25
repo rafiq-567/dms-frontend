@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
     ? JSON.parse(decodeURIComponent(authStorage.value))?.state?.isAuthenticated
     : false
 
-  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register")
+  const isAuthPage = pathname === "/login" || pathname === "/register"
 
   if (!isAuthenticated && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", request.url))

@@ -8,6 +8,9 @@ import { Card } from "@/components/ui/card"
 import FolderTree from "@/components/documents/FolderTree"
 import DocumentList from "@/components/documents/DocumentList"
 
+import { useCryptoStore } from "@/store"
+import { downloadDocument } from "@/lib/download"
+
 import { mockDocuments, mockFolders, buildFolderTree, getFileIcon, formatFileSize } from "@/lib/mockData"
 
 const statusFilters = ["all", "approved", "pending", "draft", "rejected"]
@@ -25,6 +28,16 @@ export default function DocumentsPage() {
   const [editStatus, setEditStatus] = useState<Document["status"]>("draft")
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null)
 
+  const { masterKey } = useCryptoStore()
+ 
+
+  const handleDownload = (doc: Document) => {
+    downloadDocument(doc, masterKey, (status) => {
+      if (status === "no-key") alert("Encryption key not found. Please log out and log back in.")
+      if (status === "error") alert("Download failed. Please try again.")
+    })
+  }
+
   // Folder states 
   const [folders, setFolders] = useState(mockFolders)
   const [showNewFolder, setShowNewFolder] = useState(false)
@@ -33,8 +46,8 @@ export default function DocumentsPage() {
   const [renamingName, setRenamingName] = useState("")
 
   const handlePreview = (doc: Document) => {
-  setPreviewDoc(doc)
-}
+    setPreviewDoc(doc)
+  }
 
   const folderTree = useMemo(() => buildFolderTree(folders), [folders])
 
@@ -178,7 +191,7 @@ export default function DocumentsPage() {
 
           {/* Document list */}
           <Card className="border border-gray-200 shadow-sm">
-            <DocumentList documents={filteredDocuments} onDelete={handleDelete} onEditMetadata={handleEditMetadata}  onPreview={handlePreview} />
+            <DocumentList documents={filteredDocuments} onDelete={handleDelete} onEditMetadata={handleEditMetadata} onPreview={handlePreview} />
           </Card>
 
         </div>
@@ -346,70 +359,77 @@ export default function DocumentsPage() {
       )}
 
       {/* Preview Modal */}
-{previewDoc && (
-  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4">
+      {previewDoc && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4">
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{getFileIcon(previewDoc.mimeType)}</span>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">{previewDoc.name}</h3>
-            <p className="text-xs text-gray-400">v{previewDoc.version} · {previewDoc.owner}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getFileIcon(previewDoc.mimeType)}</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">{previewDoc.name}</h3>
+                  <p className="text-xs text-gray-400">v{previewDoc.version} · {previewDoc.owner}</p>
+                </div>
+              </div>
+              <button onClick={() => setPreviewDoc(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-48 text-center">
+              <span className="text-6xl mb-4">{getFileIcon(previewDoc.mimeType)}</span>
+              <p className="text-sm font-medium text-gray-700">{previewDoc.name}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Server-side preview will be available when backend is connected.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Size", value: formatFileSize(previewDoc.size) },
+                { label: "Type", value: previewDoc.mimeType.split("/")[1].toUpperCase() },
+                { label: "Version", value: `v${previewDoc.version}` },
+                { label: "Status", value: previewDoc.status },
+                { label: "Created", value: new Date(previewDoc.createdAt).toLocaleDateString() },
+                { label: "Modified", value: new Date(previewDoc.updatedAt).toLocaleDateString() },
+              ].map((item) => (
+                <div key={item.label} className="bg-gray-50 rounded-lg px-3 py-2">
+                  <p className="text-xs text-gray-400">{item.label}</p>
+                  <p className="text-sm font-medium text-gray-800 capitalize">{item.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {previewDoc.tags && previewDoc.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {previewDoc.tags.map((tag) => (
+                  <span key={tag} className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPreviewDoc(null)}
+                className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  if (previewDoc) {
+                    handleDownload(previewDoc)
+                  }
+                }}
+                className="flex-1 bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700"
+              >
+                Download
+              </button>
+            </div>
+
           </div>
-        </div>
-        <button onClick={() => setPreviewDoc(null)} className="text-gray-400 hover:text-gray-600">✕</button>
-      </div>
-
-      <div className="bg-gray-50 rounded-lg p-8 flex flex-col items-center justify-center min-h-48 text-center">
-        <span className="text-6xl mb-4">{getFileIcon(previewDoc.mimeType)}</span>
-        <p className="text-sm font-medium text-gray-700">{previewDoc.name}</p>
-        <p className="text-xs text-gray-400 mt-1">
-          Server-side preview will be available when backend is connected.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: "Size", value: formatFileSize(previewDoc.size) },
-          { label: "Type", value: previewDoc.mimeType.split("/")[1].toUpperCase() },
-          { label: "Version", value: `v${previewDoc.version}` },
-          { label: "Status", value: previewDoc.status },
-          { label: "Created", value: new Date(previewDoc.createdAt).toLocaleDateString() },
-          { label: "Modified", value: new Date(previewDoc.updatedAt).toLocaleDateString() },
-        ].map((item) => (
-          <div key={item.label} className="bg-gray-50 rounded-lg px-3 py-2">
-            <p className="text-xs text-gray-400">{item.label}</p>
-            <p className="text-sm font-medium text-gray-800 capitalize">{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {previewDoc.tags && previewDoc.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {previewDoc.tags.map((tag) => (
-            <span key={tag} className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full">
-              #{tag}
-            </span>
-          ))}
         </div>
       )}
-
-      <div className="flex gap-2">
-        <button
-          onClick={() => setPreviewDoc(null)}
-          className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
-        >
-          Close
-        </button>
-        <button className="flex-1 bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700">
-          Download
-        </button>
-      </div>
-
-    </div>
-  </div>
-)}
     </div>
   )
 }
