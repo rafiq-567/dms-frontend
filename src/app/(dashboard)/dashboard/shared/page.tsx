@@ -91,6 +91,20 @@ export default function SharedPage() {
   const [search, setSearch] = useState("")
   const [shared, setShared] = useState<SharedDocument[]>(mockShared)
 
+
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareTab, setShareTab] = useState<"internal" | "external">("internal")
+
+  // Internal sharing
+  const [shareEmail, setShareEmail] = useState("")
+  const [sharePermission, setSharePermission] = useState<"view" | "edit" | "download">("view")
+  const [shareRecipients, setShareRecipients] = useState<string[]>([])
+
+  // External sharing
+  const [expiryDate, setExpiryDate] = useState("")
+  const [linkPassword, setLinkPassword] = useState("")
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
+
   const filtered = shared.filter((s) => {
     const matchesTab = s.type === activeTab
     const matchesSearch = s.documentName.toLowerCase().includes(search.toLowerCase())
@@ -106,6 +120,47 @@ export default function SharedPage() {
     return new Date(expiresAt) < new Date()
   }
 
+
+  const handleAddRecipient = () => {
+    if (!shareEmail.trim() || shareRecipients.includes(shareEmail.trim())) return
+    setShareRecipients((prev) => [...prev, shareEmail.trim()])
+    setShareEmail("")
+  }
+
+  const handleRemoveRecipient = (email: string) => {
+    setShareRecipients((prev) => prev.filter((r) => r !== email))
+  }
+
+  const handleInternalShare = () => {
+    if (shareRecipients.length === 0) return
+    const newShared: SharedDocument = {
+      id: `s${shared.length + 1}`,
+      documentName: "Selected Document",
+      mimeType: "application/pdf",
+      size: 102400,
+      sharedBy: "Admin User",
+      sharedAt: new Date().toISOString(),
+      expiresAt: null,
+      permission: sharePermission,
+      type: "shared_by_me",
+      recipients: shareRecipients,
+      hasPassword: false,
+    }
+    setShared((prev) => [...prev, newShared])
+    setShowShareModal(false)
+    setShareRecipients([])
+  }
+
+  const handleGenerateLink = () => {
+    const link = `https://dms.company.com/share/${Math.random().toString(36).slice(2, 10)}`
+    setGeneratedLink(link)
+  }
+
+  const handleCopyLink = (link: string) => {
+    navigator.clipboard.writeText(link)
+    alert("Link copied!")
+  }
+
   return (
     <div className="space-y-4">
 
@@ -117,7 +172,7 @@ export default function SharedPage() {
             Manage documents shared with you and by you.
           </p>
         </div>
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5" onClick={() => setShowShareModal(true)}>
           <Share2 size={15} />
           Share Document
         </Button>
@@ -274,7 +329,12 @@ export default function SharedPage() {
 
                     {item.type === "shared_by_me" && (
                       <>
-                        <Button variant="outline" size="sm" className="gap-1 text-xs h-7">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs h-7"
+                          onClick={() => handleCopyLink(`https://dms.company.com/share/${item.id}`)}
+                        >
                           <Link size={12} />
                           Copy Link
                         </Button>
@@ -297,6 +357,197 @@ export default function SharedPage() {
           </Card>
         ))}
       </div>
+
+      {/* Share Document Modal */}
+{showShareModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-800">Share Document</h3>
+        <button
+          onClick={() => {
+            setShowShareModal(false)
+            setGeneratedLink(null)
+            setShareRecipients([])
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Internal / External tabs */}
+      <div className="flex gap-1.5">
+        {(["internal", "external"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setShareTab(tab)}
+            className={cn(
+              "flex-1 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors",
+              shareTab === tab
+                ? "bg-slate-900 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            )}
+          >
+            {tab} Sharing
+          </button>
+        ))}
+      </div>
+
+      {/* Internal Sharing — FR-18 */}
+      {shareTab === "internal" && (
+        <div className="space-y-3">
+
+          {/* Permission */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Permission</label>
+            <div className="flex gap-2">
+              {(["view", "edit", "download"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setSharePermission(p)}
+                  className={cn(
+                    "flex-1 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors",
+                    sharePermission === p
+                      ? "bg-slate-900 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Add recipients */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Add Recipients</label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="user@company.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddRecipient()}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300"
+              />
+              <button
+                onClick={handleAddRecipient}
+                className="px-3 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-700"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
+          {/* Recipients list */}
+          {shareRecipients.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {shareRecipients.map((email) => (
+                <span
+                  key={email}
+                  className="flex items-center gap-1 text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full"
+                >
+                  {email}
+                  <button
+                    onClick={() => handleRemoveRecipient(email)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {shareRecipients.length === 0 && (
+            <p className="text-xs text-gray-400">No recipients added yet.</p>
+          )}
+
+          {/* Share button */}
+          <button
+            onClick={handleInternalShare}
+            disabled={shareRecipients.length === 0}
+            className="w-full bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Share with {shareRecipients.length} recipient{shareRecipients.length !== 1 ? "s" : ""}
+          </button>
+
+        </div>
+      )}
+
+      {/* External Sharing — FR-19 */}
+      {shareTab === "external" && (
+        <div className="space-y-3">
+
+          {/* Expiry date */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">
+              Expiry Date <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300"
+            />
+          </div>
+
+          {/* Password */}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">
+              Password Protection <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300"
+            />
+          </div>
+
+          {/* Generate link */}
+          <button
+            onClick={handleGenerateLink}
+            className="w-full bg-slate-900 text-white rounded-lg py-2 text-sm hover:bg-slate-700"
+          >
+            Generate Secure Link
+          </button>
+
+          {/* Generated link */}
+          {generatedLink && (
+            <div className="space-y-2">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-gray-500 break-all">{generatedLink}</p>
+              </div>
+              <button
+                onClick={() => handleCopyLink(generatedLink)}
+                className="w-full border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Copy Link
+              </button>
+              {expiryDate && (
+                <p className="text-xs text-gray-400 text-center">
+                  Expires: {new Date(expiryDate).toLocaleDateString()}
+                </p>
+              )}
+              {linkPassword && (
+                <p className="text-xs text-gray-400 text-center">
+                  🔒 Password protected
+                </p>
+              )}
+            </div>
+          )}
+
+        </div>
+      )}
+
+    </div>
+  </div>
+)}
     </div>
   )
 }

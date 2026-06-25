@@ -16,51 +16,55 @@ import { downloadDocument } from "@/lib/download"
 import { mockDocuments, mockFolders, mockShares, buildFolderTree, getFileIcon, formatFileSize } from "@/lib/mockData"
 import { Document, ShareRecord } from "@/types"
 
+import { useRouter } from "next/navigation"
+
 const statusFilters = ["all", "approved", "pending", "draft", "rejected"]
 
 export default function DocumentsPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
-  const [search, setSearch]                     = useState("")
-  const [statusFilter, setStatusFilter]         = useState("all")
-  const [documents, setDocuments]               = useState(mockDocuments)
-  const [shares, setShares]                     = useState<ShareRecord[]>(mockShares)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [documents, setDocuments] = useState(mockDocuments)
+  const [shares, setShares] = useState<ShareRecord[]>(mockShares)
 
-  const [editingDoc, setEditingDoc]         = useState<Document | null>(null)
-  const [editTags, setEditTags]             = useState<string[]>([])
-  const [editTagInput, setEditTagInput]     = useState("")
-  const [editStatus, setEditStatus]         = useState<Document["status"]>("draft")
-  const [previewDoc, setPreviewDoc]         = useState<Document | null>(null)
-  const [sharingDoc, setSharingDoc]         = useState<Document | null>(null)
-  const [versionDoc, setVersionDoc]         = useState<Document | null>(null)
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null)
+  const [editTags, setEditTags] = useState<string[]>([])
+  const [editTagInput, setEditTagInput] = useState("")
+  const [editStatus, setEditStatus] = useState<Document["status"]>("draft")
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null)
+  const [sharingDoc, setSharingDoc] = useState<Document | null>(null)
+  const [versionDoc, setVersionDoc] = useState<Document | null>(null)
+
+  const router = useRouter()
 
   const { masterKey } = useCryptoStore()
 
   const handleDownload = (doc: Document) => {
     downloadDocument(doc, masterKey, (status) => {
       if (status === "no-key") alert("Encryption key not found. Please log out and log back in.")
-      if (status === "error")  alert("Download failed. Please try again.")
+      if (status === "error") alert("Download failed. Please try again.")
     })
   }
 
   // Folder states
-  const [folders, setFolders]                   = useState(mockFolders)
-  const [showNewFolder, setShowNewFolder]       = useState(false)
-  const [newFolderName, setNewFolderName]       = useState("")
+  const [folders, setFolders] = useState(mockFolders)
+  const [showNewFolder, setShowNewFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
-  const [renamingName, setRenamingName]         = useState("")
+  const [renamingName, setRenamingName] = useState("")
 
-  const handlePreview        = (doc: Document) => setPreviewDoc(doc)
-  const handleShare          = (doc: Document) => setSharingDoc(doc)
+  const handlePreview = (doc: Document) => setPreviewDoc(doc)
+  const handleShare = (doc: Document) => setSharingDoc(doc)
   const handleVersionHistory = (doc: Document) => setVersionDoc(doc)
 
   const folderTree = useMemo(() => buildFolderTree(folders), [folders])
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
-      const matchesFolder  = selectedFolderId === null || doc.folderId === selectedFolderId
-      const matchesSearch  = doc.name.toLowerCase().includes(search.toLowerCase()) ||
+      const matchesFolder = selectedFolderId === null || doc.folderId === selectedFolderId
+      const matchesSearch = doc.name.toLowerCase().includes(search.toLowerCase()) ||
         doc.tags?.some((t) => t.includes(search.toLowerCase()))
-      const matchesStatus  = statusFilter === "all" || doc.status === statusFilter
+      const matchesStatus = statusFilter === "all" || doc.status === statusFilter
       return matchesFolder && matchesSearch && matchesStatus
     })
   }, [documents, selectedFolderId, search, statusFilter])
@@ -156,7 +160,7 @@ export default function DocumentsPage() {
             <FolderPlus size={15} />
             New Folder
           </Button>
-          <Button size="sm" className="gap-1.5">
+          <Button size="sm" className="gap-1.5" onClick={() => router.push("/dashboard/upload")}>
             <Upload size={15} />
             Upload
           </Button>
@@ -194,9 +198,8 @@ export default function DocumentsPage() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${
-                    statusFilter === s ? "bg-slate-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                  className={`text-xs px-3 py-1.5 rounded-lg capitalize transition-colors ${statusFilter === s ? "bg-slate-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
                 >
                   {s}
                 </button>
@@ -333,11 +336,11 @@ export default function DocumentsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "Size",     value: formatFileSize(previewDoc.size)                     },
-                { label: "Type",     value: previewDoc.mimeType.split("/")[1].toUpperCase()     },
-                { label: "Version",  value: `v${previewDoc.version}`                            },
-                { label: "Status",   value: previewDoc.status                                   },
-                { label: "Created",  value: new Date(previewDoc.createdAt).toLocaleDateString() },
+                { label: "Size", value: formatFileSize(previewDoc.size) },
+                { label: "Type", value: previewDoc.mimeType.split("/")[1].toUpperCase() },
+                { label: "Version", value: `v${previewDoc.version}` },
+                { label: "Status", value: previewDoc.status },
+                { label: "Created", value: new Date(previewDoc.createdAt).toLocaleDateString() },
                 { label: "Modified", value: new Date(previewDoc.updatedAt).toLocaleDateString() },
               ].map((item) => (
                 <div key={item.label} className="bg-gray-50 rounded-lg px-3 py-2">
