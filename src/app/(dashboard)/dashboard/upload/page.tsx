@@ -492,8 +492,8 @@ export default function UploadPage() {
       <div className="flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
         <span className="text-base mt-0.5">🔐</span>
         <p className="text-xs text-slate-600">
-          Files are encrypted on your device using AES-256-GCM before being uploaded.
-          The server never receives unencrypted content. Your encryption key never leaves this browser tab.
+          Files are encrypted on the device using AES-256-GCM before being uploaded.
+          The server never receives unencrypted content.  encryption key never leaves the browser tab.
         </p>
       </div>
 
