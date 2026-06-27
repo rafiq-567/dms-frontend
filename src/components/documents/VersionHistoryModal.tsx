@@ -5,9 +5,7 @@ import { Document } from "@/types"
 import { formatFileSize, getFileIcon } from "@/lib/mockData"
 import { cn } from "@/lib/utils"
 
-// ─────────────────────────────────────────────
-// MOCK VERSION DATA
-// ─────────────────────────────────────────────
+
 
 export interface DocumentVersion {
   version: number
@@ -37,9 +35,7 @@ export const mockVersions: Record<string, DocumentVersion[]> = {
   ],
 }
 
-// ─────────────────────────────────────────────
-// STATUS STYLES
-// ─────────────────────────────────────────────
+
 
 const statusStyles: Record<string, string> = {
   approved: "bg-green-100 text-green-700",
@@ -48,9 +44,7 @@ const statusStyles: Record<string, string> = {
   rejected: "bg-red-100 text-red-700",
 }
 
-// ─────────────────────────────────────────────
-// COMPONENT
-// ─────────────────────────────────────────────
+
 
 interface VersionHistoryModalProps {
   doc: Document
